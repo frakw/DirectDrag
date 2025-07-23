@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="We propose a mask-free and prompt-free drag-based image editing method that achieves state-of-the-art quality and precision among mask-free methods.">
+  <meta name="keywords" content="Computer Vision, Diffusion model, Image Generation, Image Editing, Drag-based Image Editings">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DirectDrag: High-Fidelity, Mask-Free, Prompt-Free Drag-based Image Editing via Readout-Guided Feature Alignment</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/logo.png">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-2 publication-title">
+            <img src="./static/images/logo.png" alt="DirectDrag Logo" style="height: 1.5em; vertical-align: middle; margin-right: 0.5em;">
+            DirectDrag: High-Fidelity, Mask-Free, Prompt-Free Drag-based Image Editing via Readout-Guided Feature Alignment
+          </h1>
+          <div class="is-size-4 publication-authors">
+            <strong><span class="author-block"></span>NTUST 2025</strong>
+          </div>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://resume.frakw.com">Sheng-Hao Liao</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?user=lse9X6UAAAAJ&hl=zh-TW&oi=sra">Shang-Fu Chen</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="https://teddy12155555.github.io/">Tai-Ming Huang</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://www.csie.ntu.edu.tw/~wenhuang/">Wen-Huang Cheng</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://faculty.csie.ntust.edu.tw/~hua/">Kai-Lung Hua</a><sup>1,3</sup>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>National Taiwan University of Science and Technology,</span>
+            <span class="author-block"><sup>2</sup>National Taiwan University</span>
+            <span class="author-block"><sup>3</sup>Microsoft Taiwan</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="./static/pdfs/WACV_26_DirectDrag.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://arxiv.org/"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv (comming soon)</span>
+                </a>
+              </span>
+              <!-- Video Link. -->
+              <span class="link-block">
+                <a href="https://www.youtube.com/watch?v=MrKrnHhk8IA"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video  (comming soon)</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/google/nerfies"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code (comming soon)</span>
+                  </a>
+              </span>
+            </div>
+
+            <div class="image-at-center">
+              <img src="./static/images/teaser.png" alt="Visualizing DragText and Baselines" width="90%">
+            </div>
+            <div>
+              <span><b>TL;DR: </b>We propose a mask-free and prompt-free drag-based image editing method that achieves state-of-the-art quality and precision among mask-free methods.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">       
+      <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Drag-based image editing using generative models
+            provides intuitive control over image structures. However,
+            existing methods rely heavily on manually provided masks
+            and textual prompts to preserve semantic fidelity and motion
+            precision. Removing these constraints creates a fundamental
+            trade-off: visual artifacts without masks and poor spatial
+            control without prompts. To address these limitations, we
+            propose DirectDrag, a novel mask-free and prompt-free editing
+            framework. DirectDrag enables precise and efficient manipu-
+            lation with minimal user input while maintaining high image
+            fidelity and accurate point alignment. DirectDrag introduces
+            two key innovations. First, we design an Auto Soft Mask
+            Generation module that intelligently infers editable regions
+            from point displacement, automatically localizing defor-
+            mation along movement paths while preserving contextual
+            integrity through the generative model’s inherent capacity.
+            Second, we develop a Readout-Guided Feature Alignment
+            mechanism that leverages intermediate diffusion activations
+            to maintain structural consistency during point-based edits,
+            substantially improving visual fidelity. Despite operating
+            without manual mask or prompt, DirectDrag achieves supe-
+            rior image quality compared to existing methods while main-
+            taining competitive drag accuracy. Extensive experiments
+            on DragBench and real-world scenarios demonstrate the
+            effectiveness and practicality of DirectDrag for high-quality,
+            interactive image manipulation.          
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Method. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Method</h2>
+        <div class="content has-text-justified">
+          <h3 class="title has-text-centered">
+            Overview of the proposed DirectDrag framework
+          </h3>
+
+          <p>
+            Given an input image and point pairs, we apply DDIM inversion to obtain latent codes, 
+            initialize editing via latent warpage function and generate soft mask, 
+            then iteratively apply drag and denoising guided by motion supervision and feature alignment.
+          </p>
+
+          <img id="framework_overview" width="100%" src="./static/images/framework_overview.png" alt="Framework Overview"/>
+
+          <h3 class="title has-text-centered">
+            Effect of our Soft Mask
+          </h3>
+
+          <p>
+            Left: Compared to no masking and user provide hard mask, 
+            applying the generated soft mask significantly improves visual fidelity and structure preservation, 
+            as reflected by higher image fidelity scores (1-LPIPS↑). 
+            Right: Visualization of soft masks under different drag configurations and Gaussian widths(σ), 
+            illustrating their adaptiveness to motion magnitude and direction.
+          </p>
+
+          <img id="soft_mask_effect" width="100%" src="./static/images/soft_mask_effect.png" alt="Soft Mask Effect"/>
+
+          <h3 class="title has-text-centered">
+            Readout Network Training and Effect
+          </h3>
+
+          <p>
+            Left: We train the readout network using a triplet loss on 
+            diffusion features extracted from video frames (anchor, positive) 
+            and edited images (negative). Right: Incorporating readout guidance 
+            preserves appearance details and improves structural consistency during dragging.
+          </p>
+
+          <img id="readout_guided" width="100%" src="./static/images/readout_guided.png" alt="Readout Network Training and Effect"/>
+        </div>
+      </div>
+    </div>
+    <!--/ Method. -->
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Experiments. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Experiments</h2>
+        <div class="content has-text-justified">
+          <h3 class="title has-text-centered">
+            Quantitative Evaluation
+          </h3>
+
+          <img id="quantitative" width="100%" src="./static/images/quantitative.png" alt="Quantitative Evaluation"/>
+
+          <h3 class="title has-text-centered">
+            Qualitative Results
+          </h3>
+
+          <p>
+            Qualitative comparison. Compared to the baseline(GoodDrag) and mask-free methods(AdaptiveDrag, InstantDrag), our method DirectDrag
+          </p>
+
+          <img id="qualitative" width="100%" src="./static/images/qualitative.png" alt="Qualitative Results"/>
+
+          <h3 class="title has-text-centered">
+            Ablation Study
+          </h3>
+
+          <div class="has-text-centered">
+            <img id="ablation_study" width="70%" src="./static/images/ablation_study.png" alt="Ablation Study"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--/ Experiments. -->
+  </div>
+</section>
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>Comming Soon</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            The website template is based on the
+            <a href="https://nerfies.github.io">Nerfies</a>,
+            <a href="https://diffusion-hyperfeatures.github.io">Diffusion Hyperfeatures</a>,
+            <a href="https://dreamsim-nights.github.io">DreamSim</a>,
+            <a href="https://rl-diffusion.github.io">DDPO</a>,
+            <a href="https://dave.ml/selfguidance">Self-Guidance</a>,
+            and <a href="https://readout-guidance.github.io/">Readout Guidance</a>
+            project pages.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

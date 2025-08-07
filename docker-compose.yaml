@@ -1,0 +1,30 @@
+services:
+    direct-drag:
+        stdin_open: true
+        tty: true
+        devices:
+            - /dev/dri
+        volumes:
+            - .:/root/DirectDrag
+        ports:
+            - "7862:7860"
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities:
+                              - gpu
+        environment:
+            - QT_X11_NO_MITSHM=1
+            - NVIDIA_VISIBLE_DEVICES=all
+            - NVIDIA_DRIVER_CAPABILITIES=all
+            - GRADIO_SERVER_NAME=0.0.0.0
+            - GRADIO_SERVER_PORT=7860
+        container_name: direct-drag-container
+        build: .
+        image: frakw/direct-drag:latest
+        command: /bin/bash
+        shm_size: 16G
+        ipc: host

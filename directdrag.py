@@ -94,11 +94,11 @@ def run_directdrag(source_image,
                  compare_mode=False,
                  once_drag=False,
                  enable_soft_mask=True,
-                 enable_latent_warpage_function=True,
                  enable_readout_guided_feature_alignment=True,
+                 enable_latent_warpage_function=True,
                  soft_mask_sigma=30,
-                 latent_warpage_function_ratio=0.15,
-                 readout_guided_feature_alignment_multiplier=350
+                 readout_guided_feature_alignment_multiplier=350,
+                 latent_warpage_function_ratio=0.15
                  ):
     mask = None
     prompt = ""

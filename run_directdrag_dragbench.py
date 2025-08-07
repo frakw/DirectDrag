@@ -193,11 +193,11 @@ def drag_one_image_dragbench(folder, original_image, mask, points, image_with_po
         result_save_path=result_dir,
         return_intermediate_images=return_intermediate_images,
         enable_soft_mask=True,
-        enable_latent_warpage_function=True,
         enable_readout_guided_feature_alignment=True,
+        enable_latent_warpage_function=True,
         soft_mask_sigma=30,
-        latent_warpage_function_ratio=0.15,
-        readout_guided_feature_alignment_multiplier=350
+        readout_guided_feature_alignment_multiplier=350,
+        latent_warpage_function_ratio=0.15
     )
 
     print(f'Drag finished!')

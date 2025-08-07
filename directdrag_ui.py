@@ -126,11 +126,25 @@ def create_drag_parameters_ui():
     with gr.Tab("Drag Parameters"):
         with gr.Row():
             latent_lr = gr.Number(value=0.02, label="Learning rate")
-            #prompt = gr.Textbox(label="Prompt")
             drag_end_step = gr.Number(value=7, label="End time step", precision=0)
             drag_per_step = gr.Number(value=10, label="Point tracking number per each step", precision=0)
 
     return latent_lr, drag_end_step, drag_per_step
+
+
+def create_directdrag_parameters_ui():
+    with gr.Tab("DirectDrag Parameters"):
+        with gr.Row():
+            enable_soft_mask = gr.Checkbox(label="Enable Soft Mask", value=True, interactive=True)
+            enable_readout_guided_feature_alignment = gr.Checkbox(label="Enable Readout-Guided Feature Alignment", value=True, interactive=True)
+            enable_latent_warpage_function = gr.Checkbox(label="Enable Latent Warpage Function", value=True, interactive=True)
+        with gr.Row():
+            soft_mask_sigma = gr.Number(value=30, label="Soft mask sigma", minimum=10, maximum=100, step=1, precision=0, interactive=True)
+            readout_guided_feature_alignment_multiplier = gr.Number(value=350, label="Readout-Guided Feature Alignment Multiplier", minimum=100, maximum=500, step=50, precision=0, interactive=True)
+            latent_warpage_function_ratio = gr.Number(value=0.15, label="Latent Warpage Function Ratio", minimum=0.01, maximum=0.5, step=0.01, precision=2, interactive=True)
+
+    return enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function, \
+           soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio
 
 
 def create_advance_parameters_ui():
@@ -240,7 +254,9 @@ def run_lora_and_directdrag(original_image, input_image, selected_points,
          inversion_strength, lam, latent_lr, model_path, vae_path,
          lora_path, lora_step, lora_lr, lora_batch_size, lora_rank, 
          drag_end_step, drag_per_step, r1, r2, d,
-         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar):
+         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar,
+         enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function,
+         soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio):
     global previous_original_image
     prompt = ""
     if previous_original_image is None:
@@ -259,7 +275,10 @@ def run_lora_and_directdrag(original_image, input_image, selected_points,
                         inversion_strength, lam, latent_lr, model_path, vae_path,
                         lora_path, drag_end_step, drag_per_step, r1, r2, d,
                         max_drag_per_track, max_track_no_change, feature_idx,
-                        result_save_path, save_intermediates_images)
+                        result_save_path, save_intermediates_images,
+                        save_intermedia=False, compare_mode=False, once_drag=False,
+                        enable_soft_mask=enable_soft_mask, enable_readout_guided_feature_alignment=enable_readout_guided_feature_alignment, enable_latent_warpage_function=enable_latent_warpage_function,
+                        soft_mask_sigma=soft_mask_sigma, readout_guided_feature_alignment_multiplier=readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio=latent_warpage_function_ratio)
     result_index = 0
     result_save_filename = os.path.join(result_save_path, "result_" + str(result_index) + ".png")
     while os.path.exists(result_save_filename):
@@ -277,14 +296,18 @@ def attach_run_button_event(run_button, original_image, input_image,
                             drag_end_step, drag_per_step,
                             output_image, r1, r2, d, feature_idx, new_points,
                             max_drag_per_track, max_track_no_change,
-                            save_intermediates_images, lora_status_bar):
+                            save_intermediates_images, lora_status_bar,
+                            enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function,
+                            soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio):
     run_button.click(
         run_lora_and_directdrag,
         [original_image, input_image, selected_points,
          inversion_strength, lam, latent_lr, model_path, vae_path,
          lora_path, lora_step, lora_lr, lora_batch_size, lora_rank,
          drag_end_step, drag_per_step, r1, r2, d,
-         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar],
+         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar,
+         enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function,
+         soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio],
         [output_image, new_points]
     )
 
@@ -347,6 +370,9 @@ def main():
         input_image, undo_point_button, undo_pair_button, \
         output_image, run_button, lora_status_bar = create_real_image_editing_ui()
 
+        enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function, \
+           soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio = create_directdrag_parameters_ui()
+        
         latent_lr, drag_end_step, drag_per_step = create_drag_parameters_ui()
 
         model_path, vae_path = create_base_model_config_ui()
@@ -363,7 +389,9 @@ def main():
                                 lora_path, lora_step, lora_lr, lora_batch_size, lora_rank,
                                 drag_end_step, drag_per_step, output_image,
                                 r1, r2, d, feature_idx, new_points, max_drag_per_track,
-                                max_track_no_change, save_intermediates_images,lora_status_bar)
+                                max_track_no_change, save_intermediates_images,lora_status_bar,
+                                enable_soft_mask, enable_readout_guided_feature_alignment, enable_latent_warpage_function,
+                                soft_mask_sigma, readout_guided_feature_alignment_multiplier, latent_warpage_function_ratio)
         #attach_show_points_event(show_points, output_image, new_points)
         #attach_clear_all_button_event(clear_all_button, input_image, output_image, selected_points,
         #                              original_image)

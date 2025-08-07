@@ -24,7 +24,8 @@ import numpy as np
 import json
 from pathlib import Path
 from PIL import Image
-from utils.ui_utils import run_gooddrag, train_lora_interface, show_cur_points, create_video
+from utils.ui_utils import train_lora_interface, show_cur_points, create_video
+from directdrag import run_directdrag
 import time
 import torch
 import random
@@ -166,7 +167,7 @@ def drag_one_image_dragbench(folder, original_image, mask, points, image_with_po
     print(prompt)
     if use_prompt == False:
         prompt = ''
-    output_image, new_points = run_gooddrag(
+    output_image, new_points = run_directdrag(
         source_image=original_image,
         image_with_clicks=image_with_points,
         #mask=None,
@@ -189,8 +190,14 @@ def drag_one_image_dragbench(folder, original_image, mask, points, image_with_po
         drag_loss_threshold=0,
         once_drag=False,
         max_track_no_change=5,
+        result_save_path=result_dir,
         return_intermediate_images=return_intermediate_images,
-        result_save_path=result_dir
+        enable_soft_mask=True,
+        enable_latent_warpage_function=True,
+        enable_readout_guided_feature_alignment=True,
+        soft_mask_sigma=30,
+        latent_warpage_function_ratio=0.15,
+        readout_guided_feature_alignment_multiplier=350
     )
 
     print(f'Drag finished!')

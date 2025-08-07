@@ -4,6 +4,7 @@ no_prompt_dragbench_lora_data/
 dragbench_result/
 *.safetensors
 cmd.sh
+gradio_results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

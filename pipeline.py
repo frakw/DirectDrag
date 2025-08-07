@@ -46,15 +46,9 @@ import torchvision.transforms.functional as Fu
 from utils.shift_test import shift_matrix
 use_fastdrag_unet = False
 use_fastdrag_kv_copy = False
-use_soft_mask = True
-soft_mask_sigma = 30
 
-use_drag_stretch = True
-drag_stretch_ratio = 0.15
 
 method = 'original'  # 'original', 'clipdrag', 'draglora' 'betterdrag'
-use_readout_guidance = True  # True, False
-readout_guidance_factor = 350
 
 output_drag_stretch_only = False  # True, False
 
@@ -298,7 +292,7 @@ def point_tracking_start(features, F1, handle_points, handle_points_init, target
         return handle_points
 
 
-class GoodDragger:
+class DirectDragger:
     def __init__(self, device, model_path: str, prompt: str,
                  full_height: int, full_width: int,
                  inversion_strength: float,
@@ -309,7 +303,9 @@ class GoodDragger:
                  compare_mode: bool = False,
                  vae_path: str = "default", lora_path: str = '', seed: int = 42,
                  max_drag_per_track: int = 10, drag_loss_threshold: float = 4.0, once_drag: bool = False,
-                 max_track_no_change: int = 10):
+                 max_track_no_change: int = 10,
+                 enable_soft_mask=True, enable_latent_warpage_function=True, enable_readout_guided_feature_alignment=True,
+                 soft_mask_sigma=30, latent_warpage_function_ratio=0.15, readout_guided_feature_alignment_multiplier=350):
         self.device = device
         self.vae_path = vae_path
         self.lora_path = lora_path
@@ -384,6 +380,13 @@ class GoodDragger:
         self.once_drag = once_drag
         self.no_change_track_num = 0
         self.max_no_change_track_num = max_track_no_change
+
+        self.enable_soft_mask = enable_soft_mask
+        self.enable_latent_warpage_function = enable_latent_warpage_function
+        self.enable_readout_guided_feature_alignment = enable_readout_guided_feature_alignment
+        self.soft_mask_sigma = soft_mask_sigma
+        self.latent_warpage_function_ratio = latent_warpage_function_ratio
+        self.readout_guided_feature_alignment_multiplier = readout_guided_feature_alignment_multiplier
 
     def set_lora(self):
         if self.lora_path == "":
@@ -605,7 +608,7 @@ class GoodDragger:
         print(f'Loss from drag: {drag_loss}')
 
         
-        if use_soft_mask:
+        if self.enable_soft_mask:
             # 讓變動懲罰根據 soft_mask 平滑地下降
             stability_weight = 1.0 - interp_mask  # 還是要讓背景穩定
             loss = drag_loss + self.lam * (stability_weight * (x_prev_updated - original_prev).abs()).sum()
@@ -631,7 +634,7 @@ class GoodDragger:
             return False
         return all(torch.equal(t1, t2) for t1, t2 in zip(lst1, lst2))
 
-    def gooddrag_step(self, init_code, t, t_, text_embeddings, handle_points, target_points,
+    def directdrag_step(self, init_code, t, t_, text_embeddings, handle_points, target_points,
                       features, handle_points_init, original_step_output, interp_mask,rg_controller,rg_latents,rg_feat_f0,step_idx):
         drag_latents = init_code.clone().detach()
         drag_latents.requires_grad_(True)
@@ -701,7 +704,7 @@ class GoodDragger:
                                                                original_features=features[t.item()].cuda(),
                                                                original_points=handle_points_init)
             
-            if use_readout_guidance:
+            if self.enable_readout_guided_feature_alignment:
                 appled_readout_guidance = True
                 rg_feat_f1 = rg_controller.collect_and_resize_feats()
                 feats = torch.cat([rg_feat_f0, rg_feat_f1], dim=0) 
@@ -717,7 +720,7 @@ class GoodDragger:
                 #latents_scale = (latents.detach().min(), latents.detach().max())
                 rg_loss = rg_operators.loss_guidance(rg_controller, feats, batch_idx, gt_idx, edits=rg_controller.edits, log=log_branch, emb=emb, latents_scale=latents_scale, t=t, i=step_idx)
                 
-                rg_loss = rg_loss * readout_guidance_factor
+                rg_loss = rg_loss * self.readout_guided_feature_alignment_multiplier
 
                 print('rg_loss= ',rg_loss)
 
@@ -834,7 +837,7 @@ class GoodDragger:
         """
         不插值點，而是沿 handle→target 線段掃描所有經過的 pixel，建立 binary mask，再 GaussianBlur。
         """
-        self.sigma = soft_mask_sigma
+        self.sigma = self.soft_mask_sigma
         #self.sigma = 50.0
         #self.sigma = 10.0
         #self.sigma = 15.0
@@ -1038,7 +1041,7 @@ class GoodDragger:
 
         return refined_points
 
-    def good_drag(self,
+    def direct_drag(self,
                   source_image,
                   points,
                   mask,
@@ -1051,9 +1054,9 @@ class GoodDragger:
         # Create root save folder
         config_path = "./rg_config.yaml"
         rg_config = OmegaConf.load(config_path)
-        save_folder = rg_config["output_dir"]
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder, exist_ok=True)
+        #save_folder = rg_config["output_dir"]
+        #if not os.path.exists(save_folder):
+        #    os.makedirs(save_folder, exist_ok=True)
         #OmegaConf.save(rg_config, f"{save_folder}/config.yaml")
 
         handle_points, target_points = self.get_handle_target_points(points)
@@ -1121,8 +1124,8 @@ class GoodDragger:
         mask = self.prepare_mask(mask)
 
         
-        if use_drag_stretch:
-            ratio = drag_stretch_ratio
+        if self.enable_latent_warpage_function:
+            ratio = self.latent_warpage_function_ratio
             new_target_points = [
                 h + (t - h) * ratio for h, t in zip(handle_points, target_points)
             ]
@@ -1141,7 +1144,7 @@ class GoodDragger:
                                         mask_cp_handle=mask_cp_handle,
                                         fill_mode='interpolation')
                 
-        if use_soft_mask:
+        if self.enable_soft_mask:
             #mask = self.prepare_soft_mask(handle_points, target_points, (1,1,self.sup_res_h, self.sup_res_w))
             #mask = self.prepare_soft_mask_v3(handle_points, target_points, (1,1,self.sup_res_h, self.sup_res_w))
             mask = self.prepare_soft_mask_v4(handle_points, target_points, (1,1,self.sup_res_h, self.sup_res_w))
@@ -1164,7 +1167,7 @@ class GoodDragger:
             if i < self.t2 and self.do_drag and (self.no_change_track_num != self.max_no_change_track_num):
                 t_ = valid_timestep[i + 1]
                 init_code, handle_points , text_embeddings, target_embeddings \
-                    = self.gooddrag_step(init_code, t, t_, text_embeddings, handle_points,
+                    = self.directdrag_step(init_code, t, t_, text_embeddings, handle_points,
                                                               target_points, features, handle_points_init,
                                                               original_step_output, interp_mask,
                                                               rg_controller,rg_latents,rg_feat_f0,step_idx)

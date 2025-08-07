@@ -15,12 +15,16 @@
 import os
 import gradio as gr
 from utils.ui_utils import (
-    get_points, undo_points, show_cur_points,
-    clear_all, store_img, train_lora_interface, run_gooddrag, save_image_mask_points, save_drag_result,
+    get_points, undo_point, undo_pair, show_cur_points,
+    clear_all, store_img, train_lora_interface, save_image_mask_points, save_drag_result,
     save_intermediate_images, create_video
 )
 
+from directdrag import run_directdrag
+
 import numpy as np
+
+import cv2
 
 LENGTH = 512
 
@@ -71,7 +75,9 @@ def create_lora_parameters_ui():
 
 
 def create_real_image_editing_ui():
+  
     with gr.Row():
+
         '''
         with gr.Column():
             gr.Markdown("<h2 style='text-align: center;'>📤 Draw Mask</h2>")
@@ -87,30 +93,33 @@ def create_real_image_editing_ui():
         '''
 
         with gr.Column():
-            gr.Markdown("<h2 style='text-align: center;'>✏Click Points</h2>")
+            gr.Markdown("<h2 style='text-align: left;'>Original Image & Click Points</h2>")
             input_image = gr.Image(type="numpy", label="Click on the image to mark points",
-                                   show_label=True, height=LENGTH, width=LENGTH)  # for points clicking
+                                show_label=True, height=LENGTH, width=LENGTH)  # for points clicking
             with gr.Row():
-                undo_button = gr.Button("Undo Point")
+                undo_point_button = gr.Button("Undo Point")
+                undo_pair_button = gr.Button("Undo Pair")
+                
                 #save_button = gr.Button('Save Current Data')
                 #data_dir = gr.Textbox(value='./dataset/test', label="Data Directory",
                 #                      placeholder="Enter directory path for mask and points")
+            
 
         with gr.Column():
-            gr.Markdown("<h2 style='text-align: center;'>🖼️ Editing Result</h2>")
+            gr.Markdown("<h2 style='text-align: left;'>Dragged Image</h2>")
             output_image = gr.Image(type="numpy", label="View the editing results here",
                                     show_label=True, height=LENGTH, width=LENGTH)
             with gr.Row():
                 run_button = gr.Button("Run")
-                clear_all_button = gr.Button("Clear All")
-                save_result = gr.Button("Save Result")
-                show_points = gr.Button("Show Points")
-                result_save_path = gr.Textbox(value='./result/test', label="Result Folder",
-                                              placeholder="Enter path to save the results")
                 lora_status_bar = gr.Textbox(label="LoRA Training Status", interactive=False)
-
-    return input_image, undo_button, \
-           output_image, run_button, clear_all_button, show_points, result_save_path, save_result, lora_status_bar
+                #clear_all_button = gr.Button("Clear All")
+                #save_result = gr.Button("Save Result")
+                #show_points = gr.Button("Show Points")
+                #result_save_path = gr.Textbox(value='./result/test', label="Result Folder",
+                #                            placeholder="Enter path to save the results")
+                
+    return input_image, undo_point_button, undo_pair_button, \
+           output_image, run_button, lora_status_bar
 
 
 def create_drag_parameters_ui():
@@ -201,9 +210,14 @@ def attach_input_image_event(input_image, selected_points, original_image):
         outputs=[input_image]
     )
 
-def attach_undo_button_event(undo_button, original_image, selected_points, input_image):
-    undo_button.click(
-        undo_points,
+def attach_undo_button_event(undo_point_button, undo_pair_button, original_image, selected_points, input_image):
+    undo_point_button.click(
+        undo_point,
+        [original_image, selected_points],
+        [input_image, selected_points]
+    )
+    undo_pair_button.click(
+        undo_pair,
         [original_image, selected_points],
         [input_image, selected_points]
     )
@@ -222,29 +236,39 @@ def attach_train_lora_button_event(train_lora_button, original_image, prompt,
 '''
 
 previous_original_image = None
-def run_lora_gooddrag(original_image, input_image, selected_points,
+def run_lora_and_directdrag(original_image, input_image, selected_points,
          inversion_strength, lam, latent_lr, model_path, vae_path,
          lora_path, lora_step, lora_lr, lora_batch_size, lora_rank, 
          drag_end_step, drag_per_step, r1, r2, d,
-         max_drag_per_track, max_track_no_change, feature_idx, result_save_path, save_intermediates_images, lora_status_bar):
+         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar):
     global previous_original_image
     prompt = ""
     if previous_original_image is None:
-        progress = train_lora_interface(original_image, prompt, model_path, vae_path, 
+        lora_status_bar = train_lora_interface(original_image, prompt, model_path, vae_path, 
         lora_path, lora_step, lora_lr, lora_batch_size, lora_rank)
     else:
         if not np.array_equal(original_image, previous_original_image):
-            progress = train_lora_interface(original_image, prompt, model_path, vae_path, 
+            lora_status_bar = train_lora_interface(original_image, prompt, model_path, vae_path, 
             lora_path, lora_step, lora_lr, lora_batch_size, lora_rank)
             
 
 
     previous_original_image = original_image
-    return run_gooddrag(original_image, input_image, selected_points,
+    result_save_path = "gadio_results"
+    out_image, new_points = run_directdrag(original_image, input_image, selected_points,
                         inversion_strength, lam, latent_lr, model_path, vae_path,
                         lora_path, drag_end_step, drag_per_step, r1, r2, d,
                         max_drag_per_track, max_track_no_change, feature_idx,
                         result_save_path, save_intermediates_images)
+    result_index = 0
+    result_save_filename = os.path.join(result_save_path, "result_" + str(result_index) + ".png")
+    while os.path.exists(result_save_filename):
+        result_index += 1
+        result_save_filename = os.path.join(result_save_path, "result_" + str(result_index) + ".png")
+    out_image_bgr = cv2.cvtColor(out_image, cv2.COLOR_RGB2BGR)
+    print(result_save_filename)
+    cv2.imwrite(result_save_filename, out_image_bgr)
+    return out_image, new_points
 
 def attach_run_button_event(run_button, original_image, input_image,
                             selected_points, inversion_strength, lam, latent_lr,
@@ -253,14 +277,14 @@ def attach_run_button_event(run_button, original_image, input_image,
                             drag_end_step, drag_per_step,
                             output_image, r1, r2, d, feature_idx, new_points,
                             max_drag_per_track, max_track_no_change,
-                            result_save_path, save_intermediates_images, lora_status_bar):
+                            save_intermediates_images, lora_status_bar):
     run_button.click(
-        run_lora_gooddrag,
+        run_lora_and_directdrag,
         [original_image, input_image, selected_points,
          inversion_strength, lam, latent_lr, model_path, vae_path,
          lora_path, lora_step, lora_lr, lora_batch_size, lora_rank,
          drag_end_step, drag_per_step, r1, r2, d,
-         max_drag_per_track, max_track_no_change, feature_idx, result_save_path, save_intermediates_images, lora_status_bar],
+         max_drag_per_track, max_track_no_change, feature_idx, save_intermediates_images, lora_status_bar],
         [output_image, new_points]
     )
 
@@ -320,9 +344,8 @@ def main():
         create_markdown_section()
         intermediate_images = gr.State([])
 
-        input_image, undo_button, \
-        output_image, run_button, clear_all_button, show_points, result_save_path, \
-        save_result, lora_status_bar = create_real_image_editing_ui()
+        input_image, undo_point_button, undo_pair_button, \
+        output_image, run_button, lora_status_bar = create_real_image_editing_ui()
 
         latent_lr, drag_end_step, drag_per_step = create_drag_parameters_ui()
 
@@ -333,16 +356,17 @@ def main():
         save_intermediates_images, get_mp4_button = create_intermediate_save_ui()
 
         attach_input_image_event(input_image, selected_points, original_image)
-        attach_undo_button_event(undo_button, original_image, selected_points, input_image)
+        attach_undo_button_event(undo_point_button, undo_pair_button, original_image, selected_points, input_image)
+        print(lora_status_bar)
         attach_run_button_event(run_button, original_image, input_image, selected_points,
                                 inversion_strength, lam, latent_lr, model_path, vae_path, 
                                 lora_path, lora_step, lora_lr, lora_batch_size, lora_rank,
                                 drag_end_step, drag_per_step, output_image,
                                 r1, r2, d, feature_idx, new_points, max_drag_per_track,
-                                max_track_no_change, result_save_path, save_intermediates_images,lora_status_bar)
-        attach_show_points_event(show_points, output_image, new_points)
-        attach_clear_all_button_event(clear_all_button, input_image, output_image, selected_points,
-                                      original_image)
+                                max_track_no_change, save_intermediates_images,lora_status_bar)
+        #attach_show_points_event(show_points, output_image, new_points)
+        #attach_clear_all_button_event(clear_all_button, input_image, output_image, selected_points,
+        #                              original_image)
 
     demo.queue().launch(share=False, debug=True)
 

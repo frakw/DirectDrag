@@ -8,6 +8,7 @@ drag100_result/
 *.safetensors
 cmd.sh
 gradio_results/
+run_drag_result.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

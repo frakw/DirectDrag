@@ -1,0 +1,18 @@
+***************
+***************
+2025-09-19 11:25:33
+./drag100_result:  
+use time sum: 0.0017979145050048828 
+drag per sample: 0.0
+train lora per sample: 0.0
+
+
+***************
+***************
+2025-09-19 20:33:29
+./drag100_result:  
+use time sum: 32650.0036509037 
+drag per sample: 297.7677238893509
+train lora per sample: 28.727894835472107
+
+

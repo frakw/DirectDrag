@@ -1,6 +1,6 @@
 # GoodDrag: https://github.com/zewei-Zhang/GoodDrag
 # DragBench: https://github.com/Yujun-Shi/DragDiffusion/releases/tag/v0.1.1
-# Usage: python dragbench_goodrag.py [dataset_folder]
+# Usage: python run_directdrag_dragbench.py [dataset_folder]
 # Note: you should use extract_drag_bench.py first, link: https://gist.github.com/frakw/4a259ece6e8a506057ebbbddc2ad5a73
 # *************************************************************************
 # Licensed under the Apache License, Version 2.0 (the "License");

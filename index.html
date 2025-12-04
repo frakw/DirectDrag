@@ -143,32 +143,7 @@
       <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            Drag-based image editing using generative models
-            provides intuitive control over image structures. However,
-            existing methods rely heavily on manually provided masks
-            and textual prompts to preserve semantic fidelity and motion
-            precision. Removing these constraints creates a fundamental
-            trade-off: visual artifacts without masks and poor spatial
-            control without prompts. To address these limitations, we
-            propose DirectDrag, a novel mask-free and prompt-free editing
-            framework. DirectDrag enables precise and efficient manipu-
-            lation with minimal user input while maintaining high image
-            fidelity and accurate point alignment. DirectDrag introduces
-            two key innovations. First, we design an Auto Soft Mask
-            Generation module that intelligently infers editable regions
-            from point displacement, automatically localizing defor-
-            mation along movement paths while preserving contextual
-            integrity through the generative model’s inherent capacity.
-            Second, we develop a Readout-Guided Feature Alignment
-            mechanism that leverages intermediate diffusion activations
-            to maintain structural consistency during point-based edits,
-            substantially improving visual fidelity. Despite operating
-            without manual mask or prompt, DirectDrag achieves supe-
-            rior image quality compared to existing methods while main-
-            taining competitive drag accuracy. Extensive experiments
-            on DragBench and real-world scenarios demonstrate the
-            effectiveness and practicality of DirectDrag for high-quality,
-            interactive image manipulation.          
+            Drag-based image editing using generative models provides intuitive control over image structures. However, existing methods rely heavily on manually provided masks and textual prompts to preserve semantic fidelity and motion precision. Removing these constraints creates a fundamental trade-off: visual artifacts without masks and poor spatial control without prompts. To address these limitations, we propose DirectDrag, a novel mask- and prompt-free editing framework. DirectDrag enables precise and efficient manipulation with minimal user input while maintaining high image fidelity and accurate point alignment. DirectDrag introduces two key innovations. First, we design an Auto Soft Mask Generation module that intelligently infers editable regions from point displacement, automatically localizing deformation along movement paths while preserving contextual integrity through the generative model's inherent capacity. Second, we develop a Readout-Guided Feature Alignment mechanism that leverages intermediate diffusion activations to maintain structural consistency during point-based edits, substantially improving visual fidelity. Despite operating without manual mask or prompt, DirectDrag achieves superior image quality compared to existing methods while maintaining competitive drag accuracy. Extensive experiments on DragBench and real-world scenarios demonstrate the effectiveness and practicality of DirectDrag for high-quality, interactive image manipulation.          
           </p>
         </div>
       </div>

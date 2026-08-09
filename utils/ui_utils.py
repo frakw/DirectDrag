@@ -42,6 +42,64 @@ from pytorch_lightning import seed_everything
 from .lora_utils import train_lora
 
 
+import hashlib
+
+
+LORA_CACHE_INDEX_FILENAME = "lora_index.json"
+
+
+def compute_image_hash(image: np.ndarray) -> str:
+    """Content hash of an image array, used as a stable per-image LoRA cache key."""
+    return hashlib.md5(np.ascontiguousarray(image).tobytes()).hexdigest()[:12]
+
+
+def get_lora_cache_dir(base_dir: str, image_hash: str) -> str:
+    return os.path.join(base_dir, image_hash)
+
+
+def lora_cache_is_trained(cache_dir: str) -> bool:
+    """Whether a previously-trained LoRA already exists at cache_dir."""
+    weight_path = os.path.join(cache_dir, "pytorch_lora_weights.safetensors")
+    return os.path.isfile(weight_path)
+
+
+def _load_lora_cache_order(base_dir: str):
+    index_path = os.path.join(base_dir, LORA_CACHE_INDEX_FILENAME)
+    if os.path.exists(index_path):
+        try:
+            with open(index_path, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+def _save_lora_cache_order(base_dir: str, order):
+    os.makedirs(base_dir, exist_ok=True)
+    index_path = os.path.join(base_dir, LORA_CACHE_INDEX_FILENAME)
+    with open(index_path, 'w') as f:
+        json.dump(order, f)
+
+
+def touch_lora_cache(base_dir: str, image_hash: str, max_entries: int = 10):
+    """
+    Mark image_hash as the most-recently-used LoRA cache entry, and evict the
+    least-recently-used entries (deleting their cached weight folders on disk) once
+    the number of cached entries exceeds max_entries.
+    """
+    order = _load_lora_cache_order(base_dir)
+    order = [h for h in order if h != image_hash]
+    order.append(image_hash)
+
+    while len(order) > max_entries:
+        oldest_hash = order.pop(0)
+        oldest_dir = get_lora_cache_dir(base_dir, oldest_hash)
+        if os.path.isdir(oldest_dir):
+            shutil.rmtree(oldest_dir, ignore_errors=True)
+
+    _save_lora_cache_order(base_dir, order)
+
+
 # -------------- general UI functionality --------------
 def clear_all(length=512):
     return gr.Image.update(value=None, height=length, width=length), \

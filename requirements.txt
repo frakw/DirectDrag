@@ -129,3 +129,5 @@ websockets==11.0.3
 yacs==0.1.8
 yarl==1.20.0
 zipp==3.21.0
+python-dotenv
+google-generativeai

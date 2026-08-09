@@ -68,6 +68,33 @@ def mask_image(image,
     return out
 
 
+def resize_image_max_dim(image, max_dim=512):
+    """
+    Downscale an image so its longest side is at most max_dim, preserving aspect ratio.
+    If the image is already small enough (longest side <= max_dim), it is returned
+    unchanged (same object, no copy).
+
+    Args:
+        image: numpy array, shape (H, W, C)
+        max_dim: the maximum allowed length for the longer side
+
+    Returns:
+        resized image (numpy array)
+    """
+    height, width = image.shape[:2]
+    longest_side = max(height, width)
+    if longest_side <= max_dim:
+        return image
+
+    scale = max_dim / float(longest_side)
+    new_width = max(1, int(round(width * scale)))
+    new_height = max(1, int(round(height * scale)))
+
+    pil_image = Image.fromarray(image)
+    pil_image = pil_image.resize((new_width, new_height), PIL.Image.BILINEAR)
+    return np.array(pil_image)
+
+
 def store_img(img, length=512):
     image, mask = img["image"], np.float32(img["mask"][:, :, 0]) / 255.
     height, width, _ = image.shape
@@ -133,6 +160,9 @@ def show_cur_points(img,
 
 # clear all handle/target points
 def undo_point(original_image, selected_points):
+    if original_image is None:
+        # No image uploaded yet, nothing to undo.
+        return None, selected_points
     selected_points = selected_points[:-1]
     img = original_image.copy()
     points = []
@@ -151,6 +181,9 @@ def undo_point(original_image, selected_points):
     return img, selected_points
 
 def undo_pair(original_image, selected_points):
+    if original_image is None:
+        # No image uploaded yet, nothing to undo.
+        return None, selected_points
     if len(selected_points) % 2 == 0:
         selected_points = selected_points[:-2]
     else:

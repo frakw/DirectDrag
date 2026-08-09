@@ -70,6 +70,38 @@ def get_original_points(handle_points: List[torch.Tensor],
     return original_handle_points
 
 
+MAX_IMAGE_DIM = 512
+
+
+def resize_image_and_points(image, points, max_dim=MAX_IMAGE_DIM):
+    """
+    若圖片長邊超過 max_dim,等比例縮小圖片並同步縮放 points 座標,避免記憶體爆掉;
+    維持長寬比例。若圖片本身已經在限制內,則不做任何改動。
+
+    這個縮放是在「執行階段」(Run)才做,不影響上傳/顯示/點擊互動的原始座標系。
+
+    Args:
+        image: numpy array, shape (H, W, C)
+        points: List[[a, b], ...] 拖曳點座標(handle/target 成對)
+        max_dim: 長或寬的上限像素數
+
+    Returns:
+        (resized_image, scaled_points)
+    """
+    height, width = image.shape[:2]
+    longest_side = max(height, width)
+    if longest_side <= max_dim:
+        return image, points
+
+    scale = max_dim / float(longest_side)
+    new_width = max(1, int(round(width * scale)))
+    new_height = max(1, int(round(height * scale)))
+
+    resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+    scaled_points = [[int(round(a * scale)), int(round(b * scale))] for a, b in points]
+    return resized_image, scaled_points
+
+
 def run_directdrag(source_image,
                  image_with_clicks,
                  points,
@@ -103,6 +135,10 @@ def run_directdrag(source_image,
     mask = None
     prompt = ""
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    # 圖片太大時自動等比例縮小(長或寬最多 MAX_IMAGE_DIM),並同步縮放 points 座標,
+    # 避免記憶體爆掉;這只在真正執行拖曳時發生,不影響 UI 的顯示/點擊座標系。
+    source_image, points = resize_image_and_points(source_image, points, MAX_IMAGE_DIM)
     height, width = source_image.shape[:2]
     n_inference_step = 50
     guidance_scale = 1.0
